@@ -32,31 +32,28 @@ def get_tweet_data(url: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/")
-def home():
-    return {"status": "Servidor de Tweets funcionando correctamente"}
-
 @app.post("/process-tweet")
 async def process_tweet(payload: TweetRequest):
     tweet_info = get_tweet_data(payload.tweet_url)
     
-    if payload.custom_title:
-        file_name = f"{payload.custom_title}.md"
+    # 1. Creamos el nombre con extensión .txt para que el iPhone lo acepte
+    if payload.custom_title and payload.custom_title.strip():
+        file_name = f"{payload.custom_title.strip()}.txt"
     else:
-        file_name = f"@{tweet_info['author_screen_name']}_tweet.md"
+        file_name = f"@{tweet_info['author_screen_name']}_tweet.txt"
         
-    md_content = f"""# Tweet de {tweet_info['author_name']} (@{tweet_info['author_screen_name']})
+    # 2. Formato Markdown interno (aunque el archivo sea .txt, NotebookLM lo lee igual)
+    txt_content = f"""# Tweet de {tweet_info['author_name']} (@{tweet_info['author_screen_name']})
 
 > {tweet_info['text']}
 
 ---
-- **Fuente:** {payload.tweet_url}
+- **Fuente original:** {payload.tweet_url}
 - **Fecha:** {tweet_info['created_at']}
 """
 
+    # 3. Devolvemos solo el nombre y el texto limpio
     return {
-        "status": "success",
         "file_name": file_name,
-        "content": md_content,
-        "message": "Tweet procesado en formato Markdown"
+        "content": txt_content
     }
